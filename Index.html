@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Voice Chat</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #chat {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        #input {
+            padding: 20px;
+            background-color: #333;
+            display: flex;
+        }
+        #input input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        #input button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #4CAF50;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #voiceControls {
+            padding: 20px;
+            background-color: #333;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        #voiceControls button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #4CAF50;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat">
+        <!-- Hier werden die Chatnachrichten angezeigt -->
+    </div>
+    <div id="input">
+        <input type="text" id="messageInput" placeholder="Nachricht eingeben...">
+        <button onclick="sendMessage()">Senden</button>
+    </div>
+    <div id="voiceControls">
+        <button onclick="startRecording()">Aufnahme starten</button>
+        <button onclick="stopRecording()">Aufnahme stoppen</button>
+        <button id="muteButton" onclick="toggleMute()">Mikrofon stumm</button>
+        <button id="screenShareButton" onclick="toggleScreenShare()">Bildschirm teilen</button>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let username;
+
+        function getUsername() {
+            username = prompt("Bitte gib deinen Namen ein (Philipp, Justin oder Marcel):");
+            if (!['Philipp', 'Justin', 'Marcel'].includes(username)) {
+                alert("Ungültiger Benutzername. Bitte wähle einen der folgenden Namen: Philipp, Justin oder Marcel.");
+                getUsername();
+            } else {
+                startChat();
+            }
+        }
+
+        function startChat() {
+            document.getElementById('messageInput').focus();
+            appendMessage('System', `Willkommen, !`);
+        }
+
+        function sendMessage() {
+            var messageInput = document.getElementById('messageInput');
+            var message = messageInput.value.trim();
+            if (message !== '') {
+                const time = new Date().toLocaleTimeString();
+                appendMessage(username, message, time);
+                // Hier kannst du den Code hinzufügen, um die Nachricht zu versenden
+                messageInput.value = '';
+            }
+        }
+
+        function appendMessage(sender, message, time) {
+            var chatDiv = document.getElementById('chat');
+            var messageDiv = document.createElement('div');
+            var color;
+            switch (sender) {
+                case 'Philipp':
+                    color = 'blue';
+                    break;
+                case 'Justin':
+                    color = 'green';
+                    break;
+                case 'Marcel':
+                    color = 'red';
+                    break;
+                default:
+                    color = 'white';
+                    break;
+            }
+            messageDiv.innerHTML = `<strong style="color: ;"> ():</strong> `;
+            chatDiv.appendChild(messageDiv);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = function(event) {
+                    recordedChunks.push(event.data);
+                };
+                mediaRecorder.start();
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+            }
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            const audioBlob = new Blob(recordedChunks, { type: 'audio/wav' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.controls = true;
+            document.body.appendChild(audio);
+        }
+
+        function toggleMute() {
+            const audioTracks = localStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                audioTracks[0].enabled = !audioTracks[0].enabled;
+                isMuted = !isMuted;
+                document.getElementById('muteButton').textContent = isMuted ? 'Mikrofon aktivieren' : 'Mikrofon stumm';
+            }
+        }
+
+        async function toggleScreenShare() {
+            if (!isScreenSharing) {
+                try {
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                    localStream.addTrack(screenStream.getVideoTracks()[0]);
+                    isScreenSharing = true;
+                    document.getElementById('screenShareButton').textContent = 'Bildschirmübertragung beenden';
+                } catch (error) {
+                    console.error('Error accessing screen sharing:', error);
+                }
+            } else {
+                const screenTrack = localStream.getVideoTracks().find(track => track.kind === 'video');
+                if (screenTrack) {
+                    localStream.removeTrack(screenTrack);
+                    isScreenSharing = false;
+                    document.getElementById('screenShareButton').textContent = 'Bildschirm teilen';
+                }
+            }
+       
